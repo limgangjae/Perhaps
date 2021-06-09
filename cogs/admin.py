@@ -7,7 +7,8 @@ class Admin(commands.Cog):
     self.bot = bot
 
   @commands.command()
-  async def load(self, ctx, cog):
+  @commands.is_owner()
+  async def load(self, ctx, cog: str):
     """
     Loads the module specified.
     """
@@ -22,10 +23,14 @@ class Admin(commands.Cog):
     await ctx.reply(embed=embed)
 
   @commands.command()
-  async def unload(self, ctx, cog):
+  @commands.is_owner()
+  async def unload(self, ctx, cog: str):
     """
     Unloads the module specified.
     """
+    if cog == "admin":
+      await ctx.message.add_reaction("⚠️")
+      return
     embed = discord.Embed(title="Unloaded cog")
     try:
       bot.unload_extension(f"cogs.{cog}")
@@ -37,7 +42,8 @@ class Admin(commands.Cog):
     await ctx.reply(embed=embed)
 
   @commands.command(aliases=["restart"])
-  async def reload(self, ctx, cog=None):
+  @commands.is_owner()
+  async def reload(self, ctx, cog: str=None):
     """
     Reloads all cogs
     """
