@@ -6,6 +6,7 @@ bot = commands.Bot(command_prefix="p!")
 
 bot.load_extension("cogs.utility")
 bot.load_extension("cogs.admin")
+bot.load_extension("cogs.fun")
 bot.load_extension("cogs.errorhandler")
 
 keep_alive()
