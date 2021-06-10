@@ -20,6 +20,32 @@ class Fun(commands.Cog):
       await ctx.send("**You cannot play against yourself!**")
       return
 
+    invitation = lambda d=False: [
+      [
+        Button(label="Decline", style=ButtonStyle.red, disabled=d),
+        Button(label="Accept", style=ButtonStyle.green, disabled=d)
+      ]
+    ]
+
+    msg = await ctx.send(f"**{opponent.mention}, {ctx.message.author.mention} invited you to a game of TicTacToe!**", components=invitation())
+
+    try:
+
+      invite = await bot.wait_for("button_click", check=lambda res: res.user.id == opponent.id and res.message.id == msg.id, timeout=60)
+
+      if invite.component.label == "Decline":
+        await invite.respond(type=InteractionType.UpdateMessage, content=f"**{opponent.mention} declined the invitation!**", components=invitation(True))
+        return
+        
+      else:
+        await invite.respond(type=InteractionType.UpdateMessage, content=f"**{opponent.mention} accepted the invitation!**", components=invitation(True))
+        await asyncio.sleep(1)
+        pass
+    
+    except asyncio.TimeoutError:
+      await msg.edit(type=InteractionType.UpdateMessage, content=f"**Timed out!**", components=invitation(True))
+      return
+
     options = [
       [0, 0, 0],
       [0, 0, 0],
@@ -90,7 +116,7 @@ class Fun(commands.Cog):
 #----------------------------------------------------------------------------------------------------------------
 
 
-    msg = await ctx.reply(f"**{get_player(turn).mention} goes first**", components=board())
+    await msg.edit(f"**{get_player(turn).mention}({turn}) goes first**", components=board())
 
 
     while True:
@@ -121,4 +147,3 @@ class Fun(commands.Cog):
 
 def setup(bot):
   bot.add_cog(Fun(bot))
-
