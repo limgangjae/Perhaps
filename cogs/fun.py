@@ -26,9 +26,11 @@ class Fun(commands.Cog):
       [0, 0, 0]
     ]
 
+    O = 1
+    X = -1
+
     #the person who has the turn
-    global turn
-    turn = random.choice([ctx.message.author, opponent])
+    turn = random.choice([O, X])
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -41,99 +43,82 @@ class Fun(commands.Cog):
 
       for i in range(3):
         for j in range(3):
-          if options[i][j] == -1:
-            board[i][j] = Button(style=ButtonStyle.red, label="X", id=f"{i} {j}", disabled=True)
-          elif options[i][j] == 1:
+          if options[i][j] == O:
             board[i][j] = Button(style=ButtonStyle.green, label="O", id=f"{i} {j}", disabled=True)
+          elif options[i][j] == X:
+            board[i][j] = Button(style=ButtonStyle.red, label="X", id=f"{i} {j}", disabled=True)
           else:
             board[i][j] = Button(style=ButtonStyle.grey, label="\u200b", id=f"{i} {j}", disabled=disabled)
       return board
-
-
-    #passes the turn to the opponent
-    def next_turn():
-
-      global turn
-
-      if turn == ctx.message.author:
-        turn = opponent
-      else:
-        turn = ctx.message.author
-
 
     #check if there is a winner
     def has_won():
 
       #check horizontal
       for x in options:
-        if sum(x) == 3:
-          return opponent
-        elif sum(x) == -3:
-          return ctx.message.author
+        if sum(x) == 3 or sum(x) == -3:
+          return True
 
       #check vertical
       for y in range(3):
         v = options[0][y] + options[1][y] + options[2][y]
-        if v == 3:
-          return opponent
-        elif v == -3:
-          return ctx.message.author
+        if v == 3 or v == -3:
+          return True
 
       #check diagonals
       d = options[0][2] + options[1][1] + options[2][0]
-      if d == 3:
-        return opponent
-      elif d == -3:
-        return ctx.message.author
+      if d == 3 or d == -3:
+        return True
 
       d = options[0][0] + options[1][1] + options[2][2]
-      if d == 3:
+      if d == 3 or d == -3:
+        return True
+
+    def is_tie():
+
+      if not ("0" in str(options)) and not has_won():
+        return True
+
+    def get_player(team):
+
+      if team == 1:
         return opponent
-      elif d == -3:
+      else:
         return ctx.message.author
 
 
 #----------------------------------------------------------------------------------------------------------------
 
 
-    msg = await ctx.reply(f"**{turn.mention} goes first**", components=board())
+    msg = await ctx.reply(f"**{get_player(turn).mention} goes first**", components=board())
 
 
     while True:
       try:
 
-        #the check for the interaction
-        def check(res):
-
-          global l
-          l = [int(i) for i in res.component.id.split()]
-
-          #if the button is grey and the user that clicked has this turn return true
-          return options[l[0]][l[1]] == 0 and res.user.id == turn.id and res.message.id == msg.id and res.channel.id == msg.channel.id
-
         #wait 60 seconds for the user who has this turn to react
-        res = await bot.wait_for("button_click", check=check, timeout=60) 
+        res = await bot.wait_for("button_click", check=lambda res: res.user.id == get_player(turn).id and res.message.id == msg.id, timeout=60) 
 
         #changes the selected option's value depending on who's turn it is
-        if turn == ctx.message.author:
-          options[l[0]][l[1]] = -1
-        else:
-          options[l[0]][l[1]] = 1
+        options[int(res.component.id.split()[0])][int(res.component.id.split()[1])] = turn
 
         #if there is a winner
         if has_won():
-          await msg.edit(f"**🎉 {has_won().mention} is the winner! 🎉**", components=board(True))
+          await res.respond(type=InteractionType.UpdateMessage, content=f"**🎉 {get_player(turn).mention} is the winner! 🎉**", components=board(True))
+          return
+        elif is_tie():
+          await res.respond(type=InteractionType.UpdateMessage, content=f"**Draw!**", components=board(True))
           return
         else:
-          next_turn()
-          await res.respond(type=InteractionType.UpdateMessage, content=f"**{turn.mention}'s turn**", components=board())
+          turn = -turn
+          await res.respond(type=InteractionType.UpdateMessage, content=f"**{get_player(turn).mention}'s turn**", components=board())
           pass
 
       #if the player in turn times out
       except asyncio.TimeoutError:
-        next_turn()
-        await msg.edit(f"**Timed out! 🎉 {turn.mention} is the winner! 🎉**", components=board(True))
+        await msg.edit(f"**Timed out! 🎉 {get_player(-turn).mention} is the winner! 🎉**", components=board(True))
         return
 
 def setup(bot):
   bot.add_cog(Fun(bot))
+
