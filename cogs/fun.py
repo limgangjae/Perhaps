@@ -74,7 +74,7 @@ class Fun(commands.Cog):
           elif options[i][j] == X:
             board[i][j] = Button(style=ButtonStyle.red, label="X", id=f"{i} {j}", disabled=True)
           else:
-            board[i][j] = Button(style=ButtonStyle.grey, label="-", id=f"{i} {j}", disabled=disabled)
+            board[i][j] = Button(style=ButtonStyle.grey, label=" ", id=f"{i} {j}", disabled=disabled)
       return board
 
     #check if there is a winner
