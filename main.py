@@ -2,11 +2,11 @@ import os
 from discord.ext import commands
 from keep_alive import keep_alive
 
-bot = commands.Bot(command_prefix="p!")
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("p!", "P!"), case_insensitive=True)
 
-COGS = ["utility", "admin", "fun", "errorhandler"]
+cogs = ["utility", "admin", "fun", "errorhandler"]
 
-for cog in COGS:
+for cog in cogs:
   bot.load_extension(f"cogs.{cog}")
 
 keep_alive()
