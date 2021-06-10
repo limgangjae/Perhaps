@@ -116,7 +116,7 @@ class Fun(commands.Cog):
 #----------------------------------------------------------------------------------------------------------------
 
 
-    await msg.edit(f"**{get_player(turn).mention}({turn}) goes first**", components=board())
+    await msg.edit(f"**{get_player(turn).mention} goes first**", components=board())
 
 
     while True:
@@ -147,3 +147,4 @@ class Fun(commands.Cog):
 
 def setup(bot):
   bot.add_cog(Fun(bot))
+
