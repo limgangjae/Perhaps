@@ -20,6 +20,10 @@ class Fun(commands.Cog):
       await ctx.send("**You cannot play against yourself!**")
       return
 
+
+#----------------------------------------------------------------------------------------------------------------
+
+
     invitation = lambda d=False: [
       [
         Button(label="Decline", style=ButtonStyle.red, disabled=d),
@@ -45,6 +49,10 @@ class Fun(commands.Cog):
     except asyncio.TimeoutError:
       await msg.edit(type=InteractionType.UpdateMessage, content=f"**Timed out!**", components=invitation(True))
       return
+
+
+#----------------------------------------------------------------------------------------------------------------
+
 
     options = [
       [0, 0, 0],
@@ -145,6 +153,96 @@ class Fun(commands.Cog):
         await msg.edit(f"**Timed out! 🎉 {get_player(-turn).mention} is the winner! 🎉**", components=board(True))
         return
 
+
+  @commands.command(aliases=["memorygame"])
+  async def simon(self, ctx):
+    """
+    Starts a game of memory skill
+    """
+
+    #the length of the sequence the player has to memorize
+    difficulty = 4
+
+    #the buttons that the player can interact with
+    board = lambda d=False: [
+      [
+        Button(label=" ", style=ButtonStyle.grey, id="1", disabled=d),
+        Button(label=" ", style=ButtonStyle.blue, id="2", disabled=d)
+      ],
+      [
+        Button(label=" ", style=ButtonStyle.green, id="3", disabled=d),
+        Button(label=" ", style=ButtonStyle.red, id="4", disabled=d)
+      ]
+    ]
+
+
+#----------------------------------------------------------------------------------------------------------------
+
+
+    #returns a disabled board with the specified button enabled
+    def enable_button(x):
+      b = board(True)
+      for i in range(2):
+        for j in range(2):
+          if int(board()[i][j].id) == x:
+            b[i][j].disabled = False
+            return b
+
+    #generates a new sequence
+    async def gen(d):
+
+      global sequence
+
+      #the random sequence the player has to replicate by memory
+      sequence = [random.choice([1, 2, 3, 4]) for i in range(d)]
+
+      await asyncio.sleep(2)
+
+      for i in sequence:
+        await msg.edit("**Generating sequence...**", components=enable_button(i))
+        await asyncio.sleep(2)
+        await msg.edit(components=board(True))
+
+      await asyncio.sleep(0.3)
+      await msg.edit("**Replicate the sequence!**", components=board())
+
+
+#----------------------------------------------------------------------------------------------------------------
+
+
+    msg = await ctx.send("**Memory Game Started!**", components=board(True))
+
+    await gen(difficulty)
+
+    
+    while True:
+
+      try:
+
+        #if the player has clicked and the input is from the game's message
+        res = await bot.wait_for("button_click", check=lambda res: res.user.id == ctx.message.author.id and res.message.id == msg.id, timeout=15)
+
+        #gets the current number in the sequence that the player has to input
+        i = sequence.pop(0)
+
+        #if the sequence is empty, meaning that the player has replicated the full sequence
+        if not sequence:
+          await res.respond(type=InteractionType.UpdateMessage, content="**Advancing to next difficulty...**", components=board(True))
+          difficulty += 1
+          await gen(difficulty)
+          pass
+        #if the player input is the same as the current number the player has to input
+        elif int(res.component.id) == i:
+          await res.respond(type=InteractionType.UpdateMessage, content="**Correct!**", components=board())
+          pass
+        else:
+          await res.respond(type=InteractionType.UpdateMessage, content=f"**Incorrect! Game over\n\nScore: {difficulty-4}**", components=board(True))
+          return
+
+      #if the player times out
+      except asyncio.TimeoutError:
+        await msg.edit(f"**Timed out! Game over\n\nScore: {difficulty-4}**", components=board(True))
+        return
+
 def setup(bot):
   bot.add_cog(Fun(bot))
-
