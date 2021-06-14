@@ -10,25 +10,49 @@ class Fun(commands.Cog):
     DiscordComponents(bot)
     self.bot = bot
 
-  @commands.command(aliases=["tic", "ttt"])
-  async def tictactoe(self, ctx, opponent: discord.Member=bot.user):
+  @commands.command(aliases=["ttt", "OX"])
+  @commands.cooldown(1, 50, commands.BucketType.user)
+  async def tictactoe(self, ctx, opponent: discord.Member):
     """
     Starts a game of TicTacToe
     """
+
+    if opponent == ctx.message.author:
+      await ctx.send("**You cannot play against yourself!**")
+      return
+
+    invitation = lambda d=False: [[Button(label="Decline", style=ButtonStyle.red, disabled=d), Button(label="Accept", style=ButtonStyle.green, disabled=d)]]
+
+    msg = await ctx.send(f"**Hey {opponent.mention}, {ctx.message.author.mention} invited you to a game of TicTacToe!**", components=invitation())
+
+    try:
+      res = await bot.wait_for("button_click", check=lambda res: res.user == opponent and res.message.id == msg.id, timeout=60)
+
+      if res.component.label == "Accept":
+        await res.respond(type=InteractionType.UpdateMessage, content=f"**{opponent.mention} accepted the invitation!**", components=invitation(True))
+        await asyncio.sleep(1)
+        pass
+      else:
+        await res.respond(type=InteractionType.UpdateMessage, content=f"**{opponent.mention} declined the invitation!**", components=invitation(True))
+        return
+
+    except asyncio.TimeoutError:
+      await msg.edit("**Timed out!**", components=invitation(True))
+      return
 
     O, X = 1, -1
     turn = random.choice([O, X])
     options = [[0]*3 for i in range(3)]
 
     def player(team):
-      
-      if team == O: return opponent
-      else: return ctx.message.author
+      if team == O:
+        return opponent
+      else:
+        return ctx.message.author
 
+    #returns a user interactible board that corresponds to the current options
     def board(disabled: bool=False):
-
-      board = options.copy()
-
+      board = [[0]*3 for i in range(3)]
       for i in range(3):
         for j in range(3):
           if options[i][j] == O:
@@ -40,38 +64,26 @@ class Fun(commands.Cog):
       return board
 
     def has_won():
-
       #check horizontal and vertical
       for i in range(3):
-        if 3 in (abs(sum(options[i])), abs(options[0][i] + options[1][i] + options[2][i])): return True
+        if 3 in (abs(sum(options[i])), abs(options[0][i] + options[1][i] + options[2][i])):
+          return True
       #check diagonals
-      if 3 in (abs(options[0][2] + options[1][1] + options[2][0]), abs(options[0][0] + options[1][1] + options[2][2])): return True
+      if 3 in (abs(options[0][0] + options[1][1] + options[2][2]), abs(options[0][2] + options[1][1] + options[2][0])):
+        return True
 
-    def is_draw():
-
-      Olist, Xlist = options.copy()
-
-      for i in range(3):
-        for j in range(3):
-          #replace the 0s in Olist and Xlist with O and X. if neither player can win in both situations, it is a draw
-          if options[i][j] == 0: Olist[i][j], Xlist[i][j] = O, X
-      return not has_won(Olist) and not has_won(Xlist)
-
-    if opponent == ctx.message.author:
-      await ctx.send("**You cannot play against yourself!**")
-      return
-
-    msg = await ctx.send(f"**{player(turn).mention} goes first**", components=board())
+    await msg.edit(f"**{player(turn).mention} goes first**", components=board())
 
     while True:
       try:
-        res = await bot.wait_for("button_click", check=lambda res: res.user.id == player(turn).id and res.message.id == msg.id, timeout=40) 
+        res = await bot.wait_for("button_click", check=lambda res: res.user == player(turn) and res.message.id == msg.id, timeout=40)
+
         options[int(res.component.id.split()[0])][int(res.component.id.split()[1])] = turn
 
         if has_won():
           await res.respond(type=InteractionType.UpdateMessage, content=f"**🎉 {player(turn).mention} is the winner! 🎉**", components=board(True))
           return
-        elif is_draw():
+        elif "0" not in str(options):
           await res.respond(type=InteractionType.UpdateMessage, content=f"**Draw!**", components=board(True))
           return
         else:
