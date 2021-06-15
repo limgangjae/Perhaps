@@ -4,7 +4,7 @@ from keep_alive import keep_alive
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("p!", "P!"), case_insensitive=True)
 
-cogs = ["utility", "admin", "fun", "errorhandler"]
+cogs = ["utility", "admin", "tictactoe", "errorhandler"]
 
 for cog in cogs:
   bot.load_extension(f"cogs.{cog}")
