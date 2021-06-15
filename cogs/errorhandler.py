@@ -13,10 +13,9 @@ class ErrorHandler(commands.Cog):
   async def on_command_error(self, ctx, e):
     if hasattr(ctx.command, "on_error"):
       return
-    else:
-      embed = discord.Embed(title="An error occured!", description=f"```{e}```")
-      embed.set_footer(text=rfooter[random.randint(0, len(rfooter)-1)])
-      await ctx.reply(embed=embed)
+    embed = discord.Embed(title="An error occured!", description=f"```{e}```")
+    embed.set_footer(text=rfooter[random.randint(0, len(rfooter)-1)])
+    await ctx.reply(embed=embed)
 
 def setup(bot):
   bot.add_cog(ErrorHandler(bot))
